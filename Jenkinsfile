@@ -85,8 +85,8 @@ pipeline {
                     steps {
                         withSonarQubeEnv('SonarMonext') {
                             script {
-                                if (BRANCH_NAME == 'master') {
-                                    sh './gradlew sonarqube -Dsonar.branch.name=${BRANCH_NAME}  --info --stacktrace'
+                                if (BRANCH_NAME == 'develop') {
+                                    sh './gradlew sonarqube -Dsonar.branch.name=master  --info --stacktrace'
                                 }
                                 if (BRANCH_NAME != 'develop') {
                                     sh './gradlew sonarqube  -Dsonar.branch.name=${BRANCH_NAME} -Dsonar.branch.target=develop --info --stacktrace'
