@@ -8,7 +8,7 @@ apply plugin: 'jacoco'
 
 description = 'payment-method-p24'
 group 'com.payline'
-version '1.0-SNAPSHOT'
+version '1.0-RC1-SNAPSHOT'
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
