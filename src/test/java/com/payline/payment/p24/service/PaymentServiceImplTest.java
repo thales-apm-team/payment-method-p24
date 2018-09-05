@@ -20,6 +20,7 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 
 public class PaymentServiceImplTest {
 
@@ -31,6 +32,9 @@ public class PaymentServiceImplTest {
 
     @Mock
     private RequestUtils requestUtils;
+
+    public PaymentServiceImplTest() throws GeneralSecurityException {
+    }
 
 
     @Before

@@ -36,6 +36,7 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.io.Serializable;
+import java.security.GeneralSecurityException;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Locale;
@@ -67,6 +68,9 @@ public class P24PaymentTestIT extends AbstractPaymentIntegration {
     private Order refundOrder;
     private Amount amount;
     private String transactionID;
+
+    public P24PaymentTestIT() throws GeneralSecurityException {
+    }
 
     @Test
     public void fullPaymentTest() {

@@ -15,6 +15,7 @@ import okhttp3.Response;
 
 import java.io.IOException;
 import java.net.URL;
+import java.security.GeneralSecurityException;
 import java.util.Map;
 import java.util.regex.Matcher;
 
@@ -24,7 +25,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     private RequestUtils requestUtils;
 
-    public PaymentServiceImpl() {
+    public PaymentServiceImpl() throws GeneralSecurityException {
         p24HttpClient = new P24HttpClient();
         requestUtils = new RequestUtils();
     }

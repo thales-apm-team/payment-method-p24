@@ -25,6 +25,7 @@ import javax.xml.soap.SOAPMessage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.GeneralSecurityException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -82,7 +83,7 @@ public class ConfigurationServiceImplTest {
     @Mock
     private RequestUtils requestUtils;
 
-    public ConfigurationServiceImplTest() throws IOException, SOAPException {
+    public ConfigurationServiceImplTest() throws IOException, SOAPException, GeneralSecurityException {
     }
 
     @Before

@@ -11,6 +11,7 @@ import okhttp3.Response;
 
 import javax.xml.soap.SOAPMessage;
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -35,7 +36,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 
     private SoapHelper soapHelper;
 
-    public ConfigurationServiceImpl() {
+    public ConfigurationServiceImpl() throws GeneralSecurityException {
         localization = LocalizationImpl.getInstance();
         p24HttpClient = new P24HttpClient();
         requestUtils = new RequestUtils();
