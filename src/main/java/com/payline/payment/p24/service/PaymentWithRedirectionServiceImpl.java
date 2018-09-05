@@ -16,6 +16,7 @@ import okhttp3.Response;
 
 import javax.xml.soap.SOAPMessage;
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 
 public class PaymentWithRedirectionServiceImpl implements PaymentWithRedirectionService {
 
@@ -26,7 +27,7 @@ public class PaymentWithRedirectionServiceImpl implements PaymentWithRedirection
 
     private SoapHelper soapHelper;
 
-    public PaymentWithRedirectionServiceImpl() {
+    public PaymentWithRedirectionServiceImpl() throws GeneralSecurityException {
         this.p24HttpClient = new P24HttpClient();
         this.requestUtils = new RequestUtils();
         this.soapHelper = new SoapHelper();
