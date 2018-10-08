@@ -92,28 +92,28 @@ publishing {
 
 repositories {
     mavenLocal()
-    mavenCentral()
-//    maven {
-//        url "https://nexus.intra.monext.fr:10130/nexus/content/repositories/jindus-repo-pay-pay-public/"
-//        credentials {
-//            username mavenUser
-//            password mavenPassword
-//        }
-//    }
-//    maven {
-//        url "https://nexus.intra.monext.fr:10130/nexus/content/groups/public"
-//        credentials {
-//            username mavenUser
-//            password mavenPassword
-//        }
-//    }
-//    maven {
-//        url "https://nexus.intra.monext.fr:10130/nexus/content/repositories/jindus-repo-pay-pay-snapshot/"
-//        credentials {
-//            username mavenUser
-//            password mavenPassword
-//        }
-//    }
+//    mavenCentral()
+    maven {
+        url "https://nexus.intra.monext.fr:10130/nexus/content/repositories/jindus-repo-pay-pay-public/"
+        credentials {
+            username mavenUser
+            password mavenPassword
+        }
+    }
+    maven {
+        url "https://nexus.intra.monext.fr:10130/nexus/content/groups/public"
+        credentials {
+            username mavenUser
+            password mavenPassword
+        }
+    }
+    maven {
+        url "https://nexus.intra.monext.fr:10130/nexus/content/repositories/jindus-repo-pay-pay-snapshot/"
+        credentials {
+            username mavenUser
+            password mavenPassword
+        }
+    }
 }
 
 
