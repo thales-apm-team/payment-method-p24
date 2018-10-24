@@ -22,7 +22,7 @@ import java.io.InputStream;
 import java.util.Locale;
 
 public class PaymentFormConfigurationServiceImpl implements PaymentFormConfigurationService {
-    private static final Logger logger = LogManager.getLogger("PaymentFormConfigurationService");
+    private static final Logger LOGGER = LogManager.getLogger(PaymentFormConfigurationServiceImpl.class);
 
     private static final String LOGO_CONTENT_TYPE = "image/png";
     private static final int LOGO_HEIGHT = 25;
@@ -79,7 +79,7 @@ public class PaymentFormConfigurationServiceImpl implements PaymentFormConfigura
                     .withContentType(LOGO_CONTENT_TYPE)
                     .build();
         } catch (IOException e) {
-            logger.error("Unable to load the logo", e.getMessage());
+            LOGGER.error("Unable to load the logo", e.getMessage());
             throw new RuntimeException(e);
         }
     }
