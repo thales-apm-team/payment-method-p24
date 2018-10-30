@@ -9,13 +9,13 @@ apply plugin: 'jacoco'
 
 description = 'payment-method-p24'
 group 'com.payline.payment.p24'
-version '1.1-RC2-SNAPSHOT'
+version '1.1-RC3'
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 ext {
-    paymentMethodVersion = '1.0-RC2-SNAPSHOT'
-    integrationVersion = '1.0-RC2-SNAPSHOT'
+    paymentMethodVersion = '1.0-RC3'
+    integrationVersion = '1.0-RC3'
     powerMockVersion = '1.7.0'
     releaseDirectoryPath = 'D:/build'
 }
