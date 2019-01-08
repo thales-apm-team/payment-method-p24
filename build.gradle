@@ -14,8 +14,8 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 ext {
-    paymentMethodVersion = '1.0-RC4-SNAPSHOT'
-    integrationVersion = '1.0-RC4-SNAPSHOT'
+    paymentMethodVersion = '1.0-RC5'
+    integrationVersion = '1.0-RC5'
     powerMockVersion = '1.7.0'
     releaseDirectoryPath = 'D:/build'
 }
