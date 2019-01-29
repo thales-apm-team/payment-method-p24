@@ -15,8 +15,8 @@ import com.payline.pmapi.bean.payment.PaymentFormContext;
 import com.payline.pmapi.bean.payment.request.PaymentRequest;
 import com.payline.pmapi.bean.payment.response.impl.PaymentResponseSuccess;
 import com.payline.pmapi.integration.AbstractPaymentIntegration;
-import com.payline.pmapi.service.PaymentService;
 import com.payline.pmapi.logger.LogManager;
+import com.payline.pmapi.service.PaymentService;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Test;
@@ -37,7 +37,7 @@ import static com.payline.payment.p24.utils.P24Constants.SOAP_ORDER_ID;
 
 public class P24PaymentTestIT extends AbstractPaymentIntegration {
 
-    private static final Logger logger = LogManager.getLogger("AbstractPaymentTest");
+    private static final Logger logger = LogManager.getLogger(P24PaymentTestIT.class);
 
     private final Environment environment =
             new Environment(NOTIFICATION_URL, SUCCESS_URL, CANCEL_URL, true);
