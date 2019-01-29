@@ -5,6 +5,7 @@ import com.payline.payment.p24.errors.P24ValidationException;
 import com.payline.payment.p24.service.enums.BodyMapKeys;
 import com.payline.payment.p24.utils.SecurityManager;
 import com.payline.pmapi.bean.payment.request.RedirectionPaymentRequest;
+import com.payline.pmapi.bean.payment.request.TransactionStatusRequest;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,6 +34,16 @@ public class P24VerifyRequest extends P24Request {
 
     }
 
+    public P24VerifyRequest(TransactionStatusRequest transactionStatusRequest, String orderId) throws P24ValidationException {
+        super(transactionStatusRequest);
+        validate(transactionStatusRequest);
+        this.sessionId = transactionStatusRequest.getOrder().getReference();
+        this.amount = transactionStatusRequest.getAmount().getAmountInSmallestUnit().toString();
+        this.currency = transactionStatusRequest.getAmount().getCurrency().getCurrencyCode();
+        this.orderId = orderId;
+        this.signature = createSignature();
+    }
+
     @Override
     public Map<String, String> createBodyMap() {
         Map<String, String> bodyMap = new HashMap<>();
@@ -53,11 +64,17 @@ public class P24VerifyRequest extends P24Request {
     }
 
     private void validate(RedirectionPaymentRequest redirectionPaymentRequest) throws P24ValidationException {
-        if (redirectionPaymentRequest.getOrder() == null) {
+        if (redirectionPaymentRequest.getAmount() == null) {
+            throw new P24ValidationException(P24ErrorMessages.MISSING_AMOUNT);
+        }
+    }
+
+    private void validate(TransactionStatusRequest transactionStatusRequest) throws P24ValidationException {
+        if (transactionStatusRequest.getOrder() == null) {
             throw new P24ValidationException(P24ErrorMessages.MISSING_ORDER);
         }
 
-        if (redirectionPaymentRequest.getAmount() == null) {
+        if (transactionStatusRequest.getAmount() == null) {
             throw new P24ValidationException(P24ErrorMessages.MISSING_AMOUNT);
         }
     }

@@ -8,14 +8,17 @@ import com.payline.pmapi.bean.common.FailureCause;
 import com.payline.pmapi.bean.payment.request.PaymentRequest;
 import com.payline.pmapi.bean.payment.response.PaymentResponse;
 import com.payline.pmapi.bean.payment.response.impl.PaymentResponseFailure;
-import com.payline.pmapi.bean.payment.response.impl.PaymentResponseRedirect.PaymentResponseRedirectBuilder;
 import com.payline.pmapi.bean.payment.response.impl.PaymentResponseRedirect.RedirectionRequest;
+import com.payline.pmapi.bean.payment.response.impl.PaymentResponseRedirect.PaymentResponseRedirectBuilder;
+import com.payline.pmapi.bean.payment.response.impl.PaymentResponseRedirect.RedirectionRequest.RedirectionRequestBuilder;
+import com.payline.pmapi.bean.payment.response.impl.PaymentResponseRedirect.RedirectionRequest.RequestType;
 import com.payline.pmapi.service.PaymentService;
-import okhttp3.Response;
+import org.apache.http.HttpResponse;
+import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
-import java.security.GeneralSecurityException;
 import java.util.Map;
 import java.util.regex.Matcher;
 
@@ -25,8 +28,8 @@ public class PaymentServiceImpl implements PaymentService {
 
     private RequestUtils requestUtils;
 
-    public PaymentServiceImpl() throws GeneralSecurityException {
-        p24HttpClient = new P24HttpClient();
+    public PaymentServiceImpl() {
+        p24HttpClient = P24HttpClient.getInstance();
         requestUtils = new RequestUtils();
     }
 
@@ -41,10 +44,10 @@ public class PaymentServiceImpl implements PaymentService {
 
             // do the request
             String host = P24Url.REST_HOST.getUrl(isSandbox);
-            Response response = p24HttpClient.doPost(host, P24Path.REGISTER, body);
+            HttpResponse response = p24HttpClient.doPost(host, P24Path.REGISTER, body);
 
-            if (response.code() == 200 && response.body() != null) {
-                String responseMessage = response.body().string();
+            if (response.getStatusLine().getStatusCode() == 200 && response.getEntity() != null) {
+                String responseMessage = EntityUtils.toString(response.getEntity(), "UTF-8");
 
                 // parse the result
                 // no error
@@ -55,14 +58,16 @@ public class PaymentServiceImpl implements PaymentService {
 
                     String token = t.group(1);
 
-
                     // create url from the token
-                    URL checkOutUrl = new URL(
-                            P24Constants.SCHEME, P24Url.REST_HOST.getUrl(isSandbox), P24Path.REQUEST.getPath() + token);
-                    RedirectionRequest redirectionRequest = new RedirectionRequest(checkOutUrl);
+                    URL checkOutUrl = new URL(P24Constants.SCHEME, P24Url.REST_HOST.getUrl(isSandbox), P24Path.REQUEST.getPath() + token);
+                    RedirectionRequest redirectionRequest = RedirectionRequestBuilder.aRedirectionRequest()
+                            .withRequestType(RequestType.GET)
+                            .withUrl(checkOutUrl)
+                            .build();
 
                     return PaymentResponseRedirectBuilder.aPaymentResponseRedirect()
                             .withRedirectionRequest(redirectionRequest)
+                            .withPartnerTransactionId(paymentRequest.getTransactionId())
                             .build();
                 }
                 // one or more errors
@@ -73,7 +78,7 @@ public class PaymentServiceImpl implements PaymentService {
                 // wrong response code
                 return getPaymentResponseFailure(P24Constants.NO_ERROR_CODE, FailureCause.COMMUNICATION_ERROR);
             }
-        } catch (IOException e) {
+        } catch (IOException | URISyntaxException e) {
             return getPaymentResponseFailure(P24Constants.NO_ERROR_CODE, FailureCause.INTERNAL_ERROR);
         } catch (P24ValidationException e) {
             return getPaymentResponseFailure(e.getMessage(), FailureCause.INVALID_DATA);

@@ -8,15 +8,16 @@ import com.payline.pmapi.bean.common.FailureCause;
 import com.payline.pmapi.bean.payment.request.RedirectionPaymentRequest;
 import com.payline.pmapi.bean.payment.request.TransactionStatusRequest;
 import com.payline.pmapi.bean.payment.response.PaymentResponse;
+import com.payline.pmapi.bean.payment.response.buyerpaymentidentifier.impl.Email;
 import com.payline.pmapi.bean.payment.response.impl.PaymentResponseFailure;
 import com.payline.pmapi.bean.payment.response.impl.PaymentResponseSuccess;
-import com.payline.pmapi.bean.payment.response.buyerpaymentidentifier.impl.Email;
 import com.payline.pmapi.service.PaymentWithRedirectionService;
-import okhttp3.Response;
+import org.apache.http.HttpResponse;
+import org.apache.http.util.EntityUtils;
 
 import javax.xml.soap.SOAPMessage;
 import java.io.IOException;
-import java.security.GeneralSecurityException;
+import java.net.URISyntaxException;
 
 public class PaymentWithRedirectionServiceImpl implements PaymentWithRedirectionService {
 
@@ -27,8 +28,8 @@ public class PaymentWithRedirectionServiceImpl implements PaymentWithRedirection
 
     private SoapHelper soapHelper;
 
-    public PaymentWithRedirectionServiceImpl() throws GeneralSecurityException {
-        this.p24HttpClient = new P24HttpClient();
+    public PaymentWithRedirectionServiceImpl() {
+        this.p24HttpClient = P24HttpClient.getInstance();
         this.requestUtils = new RequestUtils();
         this.soapHelper = new SoapHelper();
     }
@@ -45,9 +46,8 @@ public class PaymentWithRedirectionServiceImpl implements PaymentWithRedirection
 
         if (soapResponseMessage != null) {
 
-            errorCode = SoapErrorCodeEnum.fromP24CodeValue(
-                    soapHelper.getErrorCodeFromSoapResponseMessage(soapResponseMessage)
-            );
+            String toto = soapHelper.getErrorCodeFromSoapResponseMessage(soapResponseMessage);
+            errorCode = SoapErrorCodeEnum.fromP24CodeValue(toto);
 
             if (errorCode == null) {
                 errorCode = SoapErrorCodeEnum.UNKNOWN_ERROR;
@@ -68,7 +68,6 @@ public class PaymentWithRedirectionServiceImpl implements PaymentWithRedirection
             String merchantId = requestUtils.getContractValue(redirectionPaymentRequest, P24Constants.MERCHANT_ID);
             String password = requestUtils.getContractValue(redirectionPaymentRequest, P24Constants.MERCHANT_MDP);
             String sessionId = redirectionPaymentRequest.getOrder().getReference();
-
             boolean isSandbox = requestUtils.isSandbox(redirectionPaymentRequest);
 
             // call /trnBySessionId
@@ -79,25 +78,29 @@ public class PaymentWithRedirectionServiceImpl implements PaymentWithRedirection
             if (SoapErrorCodeEnum.OK == getErrorCode(soapResponseMessage)) {
 
                 // get needed info for REST request
-                String orderId = soapHelper.getTagContentFromSoapResponseMessage(soapResponseMessage, P24Constants.ORDER_ID);
+                String orderId = soapHelper.getTagContentFromSoapResponseMessage(soapResponseMessage, P24Constants.SOAP_ORDER_ID);
+                String orderIdFull = soapHelper.getTagContentFromSoapResponseMessage(soapResponseMessage, P24Constants.ORDER_ID);
                 String email = soapHelper.getTagContentFromSoapResponseMessage(soapResponseMessage, P24Constants.EMAIL);
 
                 // call trnVerify
                 P24VerifyRequest verifyRequest = new P24VerifyRequest(redirectionPaymentRequest, orderId);
 
                 String host = P24Url.REST_HOST.getUrl(isSandbox);
-                Response response = p24HttpClient.doPost(host, P24Path.VERIFY, verifyRequest.createBodyMap());
+                HttpResponse response = p24HttpClient.doPost(host, P24Path.VERIFY, verifyRequest.createBodyMap());
 
                 // parse the response
-                if (response.code() == 200) {
-                    String responseMessage = response.body().string();
+                if (response.getStatusLine().getStatusCode() == 200) {
+                    String responseMessage = EntityUtils.toString(response.getEntity(), "UTF-8");
 
                     if ("error=0".equalsIgnoreCase(responseMessage)) {
                         // SUCCESS!
+                        String additionalData = TransactionManagerServiceImpl.encode(orderId, orderIdFull, sessionId);
+
                         return PaymentResponseSuccess.PaymentResponseSuccessBuilder.aPaymentResponseSuccess()
                                 .withStatusCode("0")
-                                .withTransactionIdentifier(orderId)
+                                .withPartnerTransactionId(redirectionPaymentRequest.getTransactionId())
                                 .withTransactionDetails(Email.EmailBuilder.anEmail().withEmail(email).build())
+                                .withTransactionAdditionalData(additionalData)
                                 .build();
 
                     } else {
@@ -117,14 +120,75 @@ public class PaymentWithRedirectionServiceImpl implements PaymentWithRedirection
         } catch (IOException e) {
             return getPaymentResponseFailure(e.getMessage(), FailureCause.INTERNAL_ERROR);
 
-        } catch (P24ValidationException e) {
+        } catch (P24ValidationException | URISyntaxException e) {
             return getPaymentResponseFailure(e.getMessage(), FailureCause.INVALID_DATA);
         }
     }
 
     @Override
     public PaymentResponse handleSessionExpired(TransactionStatusRequest transactionStatusRequest) {
-        return getPaymentResponseFailure("timeout", FailureCause.SESSION_EXPIRED);
+        try {
+
+            String merchantId = transactionStatusRequest.getContractConfiguration().getProperty(P24Constants.MERCHANT_ID).getValue();
+            String password = transactionStatusRequest.getContractConfiguration().getProperty(P24Constants.MERCHANT_MDP).getValue();
+            String sessionId = transactionStatusRequest.getOrder().getReference();
+
+            boolean isSandbox = transactionStatusRequest.getEnvironment().isSandbox();
+
+            // call /trnBySessionId
+            P24TrnBySessionIdRequest sessionIdRequest = new P24TrnBySessionIdRequest().login(merchantId).pass(password).sessionId(sessionId);
+            SOAPMessage soapResponseMessage = soapHelper.sendSoapMessage(sessionIdRequest.buildSoapMessage(isSandbox), P24Url.SOAP_ENDPOINT.getUrl(isSandbox));
+
+            // parse the response
+            if (SoapErrorCodeEnum.OK == getErrorCode(soapResponseMessage)) {
+
+                // get needed info for REST request
+                String orderId = soapHelper.getTagContentFromSoapResponseMessage(soapResponseMessage, P24Constants.SOAP_ORDER_ID);
+                String email = soapHelper.getTagContentFromSoapResponseMessage(soapResponseMessage, P24Constants.EMAIL);
+                String orderIdFull = soapHelper.getTagContentFromSoapResponseMessage(soapResponseMessage, P24Constants.ORDER_ID);
+
+                // call trnVerify
+                P24VerifyRequest verifyRequest = new P24VerifyRequest(transactionStatusRequest, orderId);
+
+                String host = P24Url.REST_HOST.getUrl(isSandbox);
+                HttpResponse response = p24HttpClient.doPost(host, P24Path.VERIFY, verifyRequest.createBodyMap());
+
+                // parse the response
+                if (response.getStatusLine().getStatusCode() == 200) {
+                    String responseMessage = EntityUtils.toString(response.getEntity(), "UTF-8");
+
+                    if ("error=0".equalsIgnoreCase(responseMessage)) {
+                        // SUCCESS!
+                        String additionalData = TransactionManagerServiceImpl.encode(orderId, orderIdFull, sessionId);
+
+                        return PaymentResponseSuccess.PaymentResponseSuccessBuilder.aPaymentResponseSuccess()
+                                .withStatusCode("0")
+                                .withPartnerTransactionId(orderId)
+                                .withTransactionDetails(Email.EmailBuilder.anEmail().withEmail(email).build())
+                                .withTransactionAdditionalData(additionalData)
+                                .build();
+
+                    } else {
+                        // parse the response
+                        return getPaymentResponseFailure(getVerifyError(responseMessage), FailureCause.INVALID_DATA);
+
+                    }
+                } else {
+                    return getPaymentResponseFailure("invalid request", FailureCause.COMMUNICATION_ERROR);
+                }
+
+            } else {
+                // get the SOAP error and return it
+                return getPaymentResponseFailure("invalid soap data", FailureCause.INVALID_DATA);
+            }
+
+        } catch (IOException e) {
+            return getPaymentResponseFailure(e.getMessage(), FailureCause.INTERNAL_ERROR);
+
+        } catch (P24ValidationException | URISyntaxException e) {
+            return getPaymentResponseFailure(e.getMessage(), FailureCause.INVALID_DATA);
+        }
+
     }
 
     private PaymentResponseFailure getPaymentResponseFailure(String errorCode, final FailureCause failureCause) {

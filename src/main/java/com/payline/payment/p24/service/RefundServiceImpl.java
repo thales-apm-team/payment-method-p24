@@ -13,7 +13,7 @@ import com.payline.pmapi.bean.refund.response.RefundResponse;
 import com.payline.pmapi.bean.refund.response.impl.RefundResponseFailure;
 import com.payline.pmapi.bean.refund.response.impl.RefundResponseSuccess;
 import com.payline.pmapi.service.RefundService;
-import org.apache.logging.log4j.LogManager;
+import com.payline.pmapi.logger.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.xml.soap.SOAPMessage;
@@ -62,8 +62,6 @@ public class RefundServiceImpl implements RefundService {
     public RefundResponse refundRequest(RefundRequest refundRequest) {
         int batch = (int) Calendar.getInstance().getTimeInMillis();
         try {
-            SOAPMessage soapResponseMessage = null;
-            SoapErrorCodeEnum errorCode = null;
             boolean isSandbox = requestUtils.isSandbox(refundRequest);
 
             // get all needed infos
@@ -72,15 +70,15 @@ public class RefundServiceImpl implements RefundService {
 
             validateRequest(refundRequest);
             String sessionId = refundRequest.getOrder().getReference();
-            int amount = refundRequest.getOrder().getAmount().getAmountInSmallestUnit().intValue();
+            int amount = refundRequest.getAmount().getAmountInSmallestUnit().intValue();
 
             // Call P24.trnBySessionId and get the orderId from response
             P24TrnBySessionIdRequest trnBySessionIdRequest =
                     new P24TrnBySessionIdRequest().login(merchantId).pass(password).sessionId(sessionId);
-            soapResponseMessage = soapHelper.sendSoapMessage(
+            SOAPMessage soapResponseMessage = soapHelper.sendSoapMessage(
                     trnBySessionIdRequest.buildSoapMessage(isSandbox), P24Url.SOAP_ENDPOINT.getUrl(isSandbox));
 
-            errorCode = getErrorCode(soapResponseMessage);
+            SoapErrorCodeEnum errorCode = getErrorCode(soapResponseMessage);
 
             // ... continue if last ws errorCode = 0
             if (SoapErrorCodeEnum.OK != errorCode) {
@@ -116,7 +114,7 @@ public class RefundServiceImpl implements RefundService {
             if (SoapErrorCodeEnum.OK == errorCode) {
                 return RefundResponseSuccess.RefundResponseSuccessBuilder.aRefundResponseSuccess()
                         .withStatusCode("0")
-                        .withTransactionId(String.valueOf(batch))
+                        .withPartnerTransactionId(String.valueOf(batch))
                         .build();
 
             } else {
@@ -143,7 +141,7 @@ public class RefundServiceImpl implements RefundService {
         return RefundResponseFailure.RefundResponseFailureBuilder.aRefundResponseFailure()
                 .withErrorCode(errorCode)
                 .withFailureCause(failureCause)
-                .withTransactionId(transactionId)
+                .withPartnerTransactionId(transactionId)
                 .build();
     }
 
@@ -162,11 +160,5 @@ public class RefundServiceImpl implements RefundService {
             throw new P24ValidationException(err);
 
         }
-//        if (requestUtils.isNotNumeric(refundRequest.getTransactionId())) {
-//            String err = "Invalid data : trnBySessionIdOrderIdValue is not numeric";
-//            LOG.error(err);
-//            throw new P24ValidationException(err);
-//        }
-
     }
 }

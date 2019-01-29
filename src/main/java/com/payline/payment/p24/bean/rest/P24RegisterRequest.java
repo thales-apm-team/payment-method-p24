@@ -10,10 +10,10 @@ import com.payline.pmapi.bean.common.Amount;
 import com.payline.pmapi.bean.common.Buyer;
 import com.payline.pmapi.bean.payment.ContractConfiguration;
 import com.payline.pmapi.bean.payment.ContractProperty;
+import com.payline.pmapi.bean.payment.Environment;
 import com.payline.pmapi.bean.payment.Order;
-import com.payline.pmapi.bean.payment.PaylineEnvironment;
 import com.payline.pmapi.bean.payment.request.PaymentRequest;
-import org.apache.logging.log4j.LogManager;
+import com.payline.pmapi.logger.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
@@ -60,7 +60,7 @@ public class P24RegisterRequest extends P24Request {
         this.currency = amountObj.getCurrency().getCurrencyCode();
 
         this.sessionId = getOrderReference(paymentRequest);
-        this.description = this.sessionId;
+        this.description = getOrderReference(paymentRequest);
 
         Buyer buyer = paymentRequest.getBuyer();
         validateBuyer(buyer);
@@ -89,7 +89,7 @@ public class P24RegisterRequest extends P24Request {
             this.language = paymentRequest.getLocale().getLanguage();
         }
 
-        this.urlStatus = paymentRequest.getPaylineEnvironment().getNotificationURL();
+        this.urlStatus = paymentRequest.getEnvironment().getNotificationURL();
 
         /**
          * FIXME attendre l'évolution de l'APM API =>
@@ -119,7 +119,7 @@ public class P24RegisterRequest extends P24Request {
     /**
      * create the Map used to create the body
      *
-     * @return
+     * @return BodyMap
      */
     @Override
     public Map<String, String> createBodyMap() {
@@ -148,7 +148,7 @@ public class P24RegisterRequest extends P24Request {
         addIfNotNull(bodyMap, waitForResult, BodyMapKeys.WAIT_FOR_RESULT);
         addIfNotNull(bodyMap, channel, BodyMapKeys.CHANNEL);
         addIfNotNull(bodyMap, shipping, BodyMapKeys.SHIPPING);
-        addIfNotNull(bodyMap, transferLabel, BodyMapKeys.TRANSFER_LABEL);
+        addIfNotNull(bodyMap, abbreviate(transferLabel, 20), BodyMapKeys.TRANSFER_LABEL);
         addIfNotNull(bodyMap, encoding, BodyMapKeys.ENCODING);
         addIfNotNull(bodyMap, urlStatus, BodyMapKeys.URL_STATUS);
         addIfNotNull(bodyMap, timeLimit, BodyMapKeys.TIME_LIMIT);
@@ -156,12 +156,20 @@ public class P24RegisterRequest extends P24Request {
         return bodyMap;
     }
 
+    private String abbreviate(String str, int maxLenght) {
+        if (str == null || str.isEmpty() || str.length() <= maxLenght) {
+            return str;
+        }
+
+        return str.substring(0, maxLenght);
+    }
+
     /**
      * Put not null field in bodyMap
      *
-     * @param bodyMap
-     * @param field
-     * @param key
+     * @param bodyMap the BodyMap
+     * @param field   value to put
+     * @param key     key to put
      */
     private void addIfNotNull(Map<String, String> bodyMap, String field, BodyMapKeys key) {
         if (field != null) {
@@ -182,11 +190,12 @@ public class P24RegisterRequest extends P24Request {
 
     private Buyer.Address getBuyerAdresse(Buyer buyer) throws P24ValidationException {
 
-        if (buyer == null || buyer.getAddresses() == null || buyer.getAddresses().isEmpty()) {
+        if (buyer.getAddresses() == null || buyer.getAddresses().isEmpty()) {
             throw new P24ValidationException(P24ErrorMessages.MISSING_BUYER, P24ErrorMessages.MISSING_ADRESSE_TYPE);
         }
         Buyer.Address addr = buyer.getAddressForType(Buyer.AddressType.BILLING);
-        if (addr == null) {
+        if (addr == null || super.getRequestUtils().isEmpty(addr.getCountry())) {
+
             throw new P24ValidationException(P24ErrorMessages.MISSING_BUYER, P24ErrorMessages.MISSING_ADRESSE_COUNTRY);
         }
         return addr;
@@ -203,7 +212,7 @@ public class P24RegisterRequest extends P24Request {
 
     private void validateAmount(Amount amount) throws P24ValidationException {
 
-        if (amount == null || amount.getAmountInSmallestUnit() == null) {
+        if (amount.getAmountInSmallestUnit() == null) {
             LOG.error("Invalid data : amount in smallest unit is mandatory");
             throw new P24ValidationException(P24ErrorMessages.MISSING_AMOUNT, P24ErrorMessages.MISSING_AMOUNT_UNIT);
         }
@@ -214,18 +223,18 @@ public class P24RegisterRequest extends P24Request {
     }
 
     private String getRedirectionReturnURL(PaymentRequest paymentRequest) throws P24ValidationException {
-        PaylineEnvironment paylineEnvironment = paymentRequest.getPaylineEnvironment();
-        if (paylineEnvironment == null
-                || super.getRequestUtils().isEmpty(paylineEnvironment.getRedirectionReturnURL())) {
+        Environment environment = paymentRequest.getEnvironment();
+        if (environment == null
+                || super.getRequestUtils().isEmpty(environment.getRedirectionReturnURL())) {
             throw new P24ValidationException(P24ErrorMessages.MISSING_ENVIRONNEMENT, P24ErrorMessages.MISSING_RETURN_URL);
         }
 
-        return paylineEnvironment.getRedirectionReturnURL();
+        return environment.getRedirectionReturnURL();
     }
 
     private String getOrderReference(PaymentRequest paymentRequest) throws P24ValidationException {
         Order order = paymentRequest.getOrder();
-        if (order == null || super.getRequestUtils().isEmpty(order.getReference())) {
+        if (super.getRequestUtils().isEmpty(order.getReference())) {
             throw new P24ValidationException(P24ErrorMessages.MISSING_ORDER, P24ErrorMessages.MISSING_ORDER_REF);
         }
 

@@ -3,16 +3,19 @@ package com.payline.payment.p24.bean.rest;
 import com.payline.payment.p24.bean.TestUtils;
 import com.payline.payment.p24.errors.P24ErrorMessages;
 import com.payline.payment.p24.errors.P24ValidationException;
+import com.payline.payment.p24.service.enums.BodyMapKeys;
 import com.payline.payment.p24.utils.LocalizationImpl;
 import com.payline.payment.p24.utils.P24Constants;
 import com.payline.pmapi.bean.common.Amount;
 import com.payline.pmapi.bean.common.Buyer;
+import com.payline.pmapi.bean.configuration.PartnerConfiguration;
 import com.payline.pmapi.bean.configuration.request.ContractParametersCheckRequest;
 import com.payline.pmapi.bean.payment.Browser;
 import com.payline.pmapi.bean.payment.ContractConfiguration;
+import com.payline.pmapi.bean.payment.Environment;
 import com.payline.pmapi.bean.payment.Order;
-import com.payline.pmapi.bean.payment.PaylineEnvironment;
 import com.payline.pmapi.bean.payment.request.PaymentRequest;
+import org.apache.commons.lang.reflect.FieldUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -30,8 +33,8 @@ import static com.payline.payment.p24.bean.TestUtils.SUCCESS_URL;
 
 public class P24RegisterRequestTest {
 
-    private static final PaylineEnvironment paylineEnvironment =
-            new PaylineEnvironment(null, SUCCESS_URL, CANCEL_URL, true);
+    private static final Environment ENVIRONMENT =
+            new Environment(null, SUCCESS_URL, CANCEL_URL, true);
 
     private static final ContractConfiguration contractConfiguration = TestUtils.createContractConfiguration();
 
@@ -61,26 +64,6 @@ public class P24RegisterRequestTest {
         MockitoAnnotations.initMocks(this);
     }
 
-
-    @Test
-    public void ConstructorInvocationWoOrder() throws P24ValidationException {
-        expectedEx.expect(P24ValidationException.class);
-        expectedEx.expectMessage(P24ErrorMessages.MISSING_ORDER);
-
-        PaymentRequest request = PaymentRequest.builder()
-                .withAmount(amount)
-                .withBrowser(browser)
-                .withContractConfiguration(contractConfiguration)
-                .withPaylineEnvironment(paylineEnvironment)
-                .withOrder(null)
-                .withTransactionId(transactionID)
-                .withSoftDescriptor(softDescriptor)
-                .build();
-
-        new P24RegisterRequest(request);
-    }
-
-
     @Test
     public void ConstructorInvocationWoOrderReference() throws P24ValidationException {
         expectedEx.expect(P24ValidationException.class);
@@ -90,10 +73,12 @@ public class P24RegisterRequestTest {
                 .withAmount(amount)
                 .withBrowser(browser)
                 .withContractConfiguration(contractConfiguration)
-                .withPaylineEnvironment(paylineEnvironment)
-                .withOrder(Order.OrderBuilder.anOrder().withReference("").build())
+                .withEnvironment(ENVIRONMENT)
                 .withTransactionId(transactionID)
                 .withSoftDescriptor(softDescriptor)
+                .withBuyer(Buyer.BuyerBuilder.aBuyer().build())
+                .withPartnerConfiguration(new PartnerConfiguration(new HashMap<>(), new HashMap<>()))
+                .withOrder(Order.OrderBuilder.anOrder().withReference("").build())
                 .build();
 
         new P24RegisterRequest(request);
@@ -107,11 +92,12 @@ public class P24RegisterRequestTest {
                 .withAmount(amount)
                 .withBrowser(browser)
                 .withContractConfiguration(contractConfiguration)
-                .withPaylineEnvironment(paylineEnvironment)
+                .withEnvironment(ENVIRONMENT)
                 .withOrder(order)
                 .withTransactionId(transactionID)
                 .withSoftDescriptor(softDescriptor)
-                .withBuyer(null)
+                .withBuyer(Buyer.BuyerBuilder.aBuyer().build())
+                .withPartnerConfiguration(new PartnerConfiguration(new HashMap<>(), new HashMap<>()))
                 .build();
         new P24RegisterRequest(request);
     }
@@ -136,11 +122,12 @@ public class P24RegisterRequestTest {
                 .withAmount(amount)
                 .withBrowser(browser)
                 .withContractConfiguration(contractConfiguration)
-                .withPaylineEnvironment(paylineEnvironment)
+                .withEnvironment(ENVIRONMENT)
                 .withOrder(order)
                 .withTransactionId(transactionID)
                 .withSoftDescriptor(softDescriptor)
                 .withBuyer(buyer)
+                .withPartnerConfiguration(new PartnerConfiguration(new HashMap<>(), new HashMap<>()))
                 .build();
         new P24RegisterRequest(request);
     }
@@ -164,17 +151,21 @@ public class P24RegisterRequestTest {
                 .withAmount(amount)
                 .withBrowser(browser)
                 .withContractConfiguration(contractConfiguration)
-                .withPaylineEnvironment(paylineEnvironment)
+                .withEnvironment(ENVIRONMENT)
                 .withOrder(order)
                 .withTransactionId(transactionID)
                 .withSoftDescriptor(softDescriptor)
                 .withBuyer(buyer)
+                .withBrowser(new Browser("", Locale.FRANCE))
+                .withPartnerConfiguration(new PartnerConfiguration(new HashMap<>(), new HashMap<>()))
                 .build();
         new P24RegisterRequest(request);
     }
 
     @Test
     public void ConstructorInvocationWoCountry() throws P24ValidationException {
+        expectedEx.expect(P24ValidationException.class);
+        expectedEx.expectMessage(P24ErrorMessages.MISSING_BUYER);
         Buyer.Address address = Buyer.Address.AddressBuilder.anAddress()
                 .withCountry("")
                 .build();
@@ -191,11 +182,12 @@ public class P24RegisterRequestTest {
                 .withAmount(amount)
                 .withBrowser(browser)
                 .withContractConfiguration(contractConfiguration)
-                .withPaylineEnvironment(paylineEnvironment)
+                .withEnvironment(ENVIRONMENT)
                 .withOrder(order)
                 .withTransactionId(transactionID)
                 .withSoftDescriptor(softDescriptor)
                 .withBuyer(buyer)
+                .withPartnerConfiguration(new PartnerConfiguration(new HashMap<>(), new HashMap<>()))
                 .build();
         new P24RegisterRequest(request);
     }
@@ -219,11 +211,13 @@ public class P24RegisterRequestTest {
         PaymentRequest request = PaymentRequest.builder()
                 .withBrowser(browser)
                 .withContractConfiguration(contractConfiguration)
-                .withPaylineEnvironment(paylineEnvironment)
+                .withEnvironment(ENVIRONMENT)
                 .withOrder(order)
                 .withTransactionId(transactionID)
                 .withSoftDescriptor(softDescriptor)
                 .withBuyer(buyer)
+                .withPartnerConfiguration(new PartnerConfiguration(new HashMap<>(), new HashMap<>()))
+                .withAmount(new Amount(null, Currency.getInstance("EUR")))
                 .build();
         new P24RegisterRequest(request);
     }
@@ -248,11 +242,12 @@ public class P24RegisterRequestTest {
                 .withAmount(new Amount(null, Currency.getInstance("EUR")))
                 .withBrowser(browser)
                 .withContractConfiguration(contractConfiguration)
-                .withPaylineEnvironment(paylineEnvironment)
+                .withEnvironment(ENVIRONMENT)
                 .withOrder(order)
                 .withTransactionId(transactionID)
                 .withSoftDescriptor(softDescriptor)
                 .withBuyer(buyer)
+                .withPartnerConfiguration(new PartnerConfiguration(new HashMap<>(), new HashMap<>()))
                 .build();
         new P24RegisterRequest(request);
     }
@@ -277,17 +272,18 @@ public class P24RegisterRequestTest {
                 .withAmount(new Amount(BigInteger.TEN, null))
                 .withBrowser(browser)
                 .withContractConfiguration(contractConfiguration)
-                .withPaylineEnvironment(paylineEnvironment)
+                .withEnvironment(ENVIRONMENT)
                 .withOrder(order)
                 .withTransactionId(transactionID)
                 .withSoftDescriptor(softDescriptor)
                 .withBuyer(buyer)
+                .withPartnerConfiguration(new PartnerConfiguration(new HashMap<>(), new HashMap<>()))
                 .build();
         new P24RegisterRequest(request);
     }
 
     @Test
-    public void ConstructorInvocationWoPaylineEnvironment() throws P24ValidationException {
+    public void ConstructorInvocationWoEnvironment() throws P24ValidationException {
         expectedEx.expect(P24ValidationException.class);
         expectedEx.expectMessage(P24ErrorMessages.MISSING_ENVIRONNEMENT);
         Buyer.Address address = Buyer.Address.AddressBuilder.anAddress()
@@ -310,6 +306,8 @@ public class P24RegisterRequestTest {
                 .withTransactionId(transactionID)
                 .withSoftDescriptor(softDescriptor)
                 .withBuyer(buyer)
+                .withPartnerConfiguration(new PartnerConfiguration(new HashMap<>(), new HashMap<>()))
+                .withEnvironment(new Environment("", "", "", true))
                 .build();
         new P24RegisterRequest(request);
     }
@@ -334,11 +332,12 @@ public class P24RegisterRequestTest {
                 .withAmount(amount)
                 .withBrowser(browser)
                 .withContractConfiguration(contractConfiguration)
-                .withPaylineEnvironment(new PaylineEnvironment(null, "", CANCEL_URL, true))
+                .withEnvironment(new Environment(null, "", CANCEL_URL, true))
                 .withOrder(order)
                 .withTransactionId(transactionID)
                 .withSoftDescriptor(softDescriptor)
                 .withBuyer(buyer)
+                .withPartnerConfiguration(new PartnerConfiguration(new HashMap<>(), new HashMap<>()))
                 .build();
         new P24RegisterRequest(request);
     }
@@ -354,6 +353,50 @@ public class P24RegisterRequestTest {
 
         );
         Assert.assertNotNull(map);
+
+    }
+
+    @Test
+    public void createBodyMap_lenght() throws Exception {
+        P24RegisterRequest request = new P24RegisterRequest(createPaymentRequestMandatory());
+        //create char array of specified length
+        char[] charArray = new char[20];
+
+        //fill all elements with the specified char
+        Arrays.fill(charArray, 'A');
+
+        /*
+        Test 20
+         */
+        //create string from char array and returnreturn ;
+        String test20 = new String(charArray);
+        FieldUtils.writeField(request, "transferLabel", test20, true);
+        Map<String, String> map = request.createBodyMap();
+
+        Assert.assertNotNull(map);
+        Assert.assertEquals(test20, map.get(BodyMapKeys.TRANSFER_LABEL.getKey()));
+
+        /*
+        Test 21
+         */
+        String test21 = test20 + "x";
+        FieldUtils.writeField(request, "transferLabel", test21, true);
+        map = request.createBodyMap();
+
+        Assert.assertNotNull(map);
+        Assert.assertEquals(test20, map.get(BodyMapKeys.TRANSFER_LABEL.getKey()));
+
+        /*
+        Test 19
+         */
+        String test19 = test20.substring(1);
+        FieldUtils.writeField(request, "transferLabel", test19, true);
+        map = request.createBodyMap();
+
+        Assert.assertNotNull(map);
+        Assert.assertEquals(test19, map.get(BodyMapKeys.TRANSFER_LABEL.getKey()));
+
+
     }
 
 
@@ -372,10 +415,13 @@ public class P24RegisterRequestTest {
         return PaymentRequest.builder()
                 .withAmount(amount)
                 .withContractConfiguration(contractConfiguration)
-                .withPaylineEnvironment(paylineEnvironment)
+                .withEnvironment(ENVIRONMENT)
                 .withOrder(order)
                 .withTransactionId(transactionID)
                 .withBuyer(buyer)
+                .withPartnerConfiguration(new PartnerConfiguration(new HashMap<>(), new HashMap<>()))
+                .withBrowser(new Browser("", Locale.FRANCE))
+                .withSoftDescriptor("")
                 .build();
     }
 
@@ -411,7 +457,7 @@ public class P24RegisterRequestTest {
         ContractParametersCheckRequest contractParametersCheckRequest =
                 ContractParametersCheckRequest.CheckRequestBuilder.aCheckRequest()
                         .withContractConfiguration(contractConfiguration)
-                        .withPaylineEnvironment(paylineEnvironment)
+                        .withEnvironment(ENVIRONMENT)
                         .withAccountInfo(bodyMap)
                         .withLocale(Locale.FRANCE)
                         .build();

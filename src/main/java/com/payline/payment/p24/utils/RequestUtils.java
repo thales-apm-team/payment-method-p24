@@ -5,7 +5,7 @@ import com.payline.payment.p24.errors.P24ValidationException;
 import com.payline.pmapi.bean.Request;
 import com.payline.pmapi.bean.configuration.request.ContractParametersCheckRequest;
 import com.payline.pmapi.bean.payment.ContractProperty;
-import org.apache.logging.log4j.LogManager;
+import com.payline.pmapi.logger.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class RequestUtils {
@@ -18,10 +18,10 @@ public class RequestUtils {
      * @throws P24ValidationException
      */
     public boolean isSandbox(Request request) throws P24ValidationException {
-        if (request.getPaylineEnvironment() == null) {
+        if (request.getEnvironment() == null) {
             throw new P24ValidationException(P24ErrorMessages.MISSING_ENVIRONNEMENT);
         }
-        return request.getPaylineEnvironment().isSandbox();
+        return request.getEnvironment().isSandbox();
     }
 
     /**
@@ -30,10 +30,10 @@ public class RequestUtils {
      * @throws P24ValidationException
      */
     public boolean isSandbox(ContractParametersCheckRequest request) throws P24ValidationException {
-        if (request.getPaylineEnvironment() == null) {
+        if (request.getEnvironment() == null) {
             throw new P24ValidationException(P24ErrorMessages.MISSING_ENVIRONNEMENT);
         }
-        return request.getPaylineEnvironment().isSandbox();
+        return request.getEnvironment().isSandbox();
     }
 
     /**

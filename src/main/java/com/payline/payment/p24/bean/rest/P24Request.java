@@ -6,15 +6,16 @@ import com.payline.payment.p24.utils.RequestUtils;
 import com.payline.pmapi.bean.Request;
 import com.payline.pmapi.bean.configuration.request.ContractParametersCheckRequest;
 import com.payline.pmapi.bean.payment.ContractConfiguration;
-import com.payline.pmapi.bean.payment.PaylineEnvironment;
+import com.payline.pmapi.bean.payment.Environment;
 import com.payline.pmapi.bean.payment.request.PaymentRequest;
+import com.payline.pmapi.bean.payment.request.TransactionStatusRequest;
 
 import java.util.Map;
 
 public abstract class P24Request implements Request {
 
     private final ContractConfiguration contractConfiguration;
-    private final PaylineEnvironment paylineEnvironment;
+    private final Environment environment;
     private String merchantId;
     private String posId;
     private String key;
@@ -24,7 +25,7 @@ public abstract class P24Request implements Request {
 
     public P24Request(PaymentRequest paymentRequest) throws P24ValidationException {
         this.contractConfiguration = paymentRequest.getContractConfiguration();
-        this.paylineEnvironment = paymentRequest.getPaylineEnvironment();
+        this.environment = paymentRequest.getEnvironment();
         this.merchantId = requestUtils.getContractValue(paymentRequest, P24Constants.MERCHANT_ID);
         this.posId = requestUtils.getContractValue(paymentRequest, P24Constants.POS_ID);
         if (posId == null || posId.length() == 0) {
@@ -35,7 +36,7 @@ public abstract class P24Request implements Request {
 
     public P24Request(ContractParametersCheckRequest contractParametersCheckRequest) {
         this.contractConfiguration = contractParametersCheckRequest.getContractConfiguration();
-        this.paylineEnvironment = contractParametersCheckRequest.getPaylineEnvironment();
+        this.environment = contractParametersCheckRequest.getEnvironment();
 
         // get all fields to check
         final Map<String, String> accountInfo = contractParametersCheckRequest.getAccountInfo();
@@ -45,6 +46,21 @@ public abstract class P24Request implements Request {
             posId = this.getMerchantId();
         }
         this.key = accountInfo.get(P24Constants.MERCHANT_KEY);
+    }
+
+    public P24Request(TransactionStatusRequest transactionStatusRequest) {
+        this.contractConfiguration = transactionStatusRequest.getContractConfiguration();
+        this.environment = transactionStatusRequest.getEnvironment();
+
+        // get all fields to check
+        final ContractConfiguration configuration = transactionStatusRequest.getContractConfiguration();
+
+        this.merchantId = configuration.getProperty(P24Constants.MERCHANT_ID).getValue();
+        this.posId = configuration.getProperty(P24Constants.POS_ID).getValue();
+        if (posId == null || posId.length() == 0) {
+            posId = this.getMerchantId();
+        }
+        this.key = configuration.getProperty(P24Constants.MERCHANT_KEY).getValue();
     }
 
     public String getMerchantId() {
@@ -60,8 +76,8 @@ public abstract class P24Request implements Request {
     }
 
     @Override
-    public PaylineEnvironment getPaylineEnvironment() {
-        return paylineEnvironment;
+    public Environment getEnvironment() {
+        return environment;
     }
 
     @Override
