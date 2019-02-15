@@ -59,6 +59,7 @@ dependencies {
     compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.11.0'
     compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.11.0'
 
+    testRuntimeOnly group: 'commons-lang', name: 'commons-lang', version: '2.6'
     // JUnit and Mockito
     testImplementation "junit:junit:4.11"
     testImplementation group: 'org.mockito', name: 'mockito-core', version: '2.22.0'
